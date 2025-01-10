@@ -39,6 +39,7 @@ export const registerNewUser = async (req, res) => {
     });
     if (newUser) {
       generateTokenAndCookie(newUser._id, res);
+
       await newUser.save();
       res.status(200).json({ data: newUser });
     } else {
@@ -46,6 +47,29 @@ export const registerNewUser = async (req, res) => {
     }
   } catch (error) {
     console.log("Error creating user");
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const userLogin = async (req, res) => {
+  try {
+    const { userInput, password } = req.body;
+    const user = await User.findOne({
+      $or: [{ username: userInput, email: userInput }],
+    });
+    if (!user) {
+      //User not found
+      return res.status(404).json({ message: "User not found" });
+    }
+    const isPassowrdValid = await bcrypt.compare(password, user.password);
+    if (!isPassowrdValid) {
+      return res.status(404).json({ message: "Password is invalid" });
+    }
+    generateTokenAndCookie(user._id);
+    res.status(200).json({ message: "User Logged in" });
+    
+  } catch (error) {
+    console.log("Error logging in user");
     res.status(500).json({ message: error.message });
   }
 };
